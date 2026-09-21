@@ -1,5 +1,7 @@
 # Payment Service API Documentation
 
+DISCLAIMER: Let's first address the elephant in the room: I did use AI for part of this assignment, especially for some boilerplate code, such as the Docker Compose configuration, the Traefik configuration, etc.
+
 ## Overview
 
 The Payment Service provides REST and WebSocket APIs for managing payments in an event-driven architecture. All endpoints are accessible through Traefik reverse proxy at the `/api` prefix.
