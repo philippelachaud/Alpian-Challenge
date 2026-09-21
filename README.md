@@ -160,6 +160,8 @@ Open it in your browser to:
 - View real-time payment status updates
 - See all payment activity in the system
 
+![Websockets Monitor](websockets_monitor.png)
+
 ### Complete Workflow Examples
 
 Cf. `src/test/http/payments.http`

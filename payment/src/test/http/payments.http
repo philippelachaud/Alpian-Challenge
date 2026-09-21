@@ -49,10 +49,10 @@ Content-Type: application/json
 
 ### Cancel Payment - Success (cancel payment-006)
 ### Should return 200 OK
-DELETE http://localhost:8000/api/payment/cancel?id=b195c3b1-136c-408a-a1c4-51d157a090c3
+DELETE http://localhost:8000/api/payment/cancel?id=56b433c3-0451-40fd-90be-665c23fc05d5
 
 ###
 
 ### Cancel Payment - Failure (payment not found)
 ### Should return 200 initially, but will fail in processor
-DELETE http://localhost:8000/api/payment/cancel?id=b195c3b1-136c-408a-a1c4-51d157a090c3
+DELETE http://localhost:8000/api/payment/cancel?id=56b433c3-0451-40fd-90be-665c23fc05d5
