@@ -1,0 +1,74 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-payment-table
+      author: system
+      changes:
+        - createTable:
+            tableName: payment
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_payment
+                    nullable: false
+              - column:
+                  name: from_account_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: to_account
+                  type: VARCHAR(34)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: DECIMAL(19, 4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reference
+                  type: VARCHAR(255)
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: payment
+            baseColumnNames: from_account_id
+            referencedTableName: account
+            referencedColumnNames: id
+            constraintName: fk_payment_from_account
+            onDelete: RESTRICT
+            onUpdate: CASCADE
+        - createIndex:
+            tableName: payment
+            indexName: idx_payment_from_account_id
+            columns:
+              - column:
+                  name: from_account_id
+        - createIndex:
+            tableName: payment
+            indexName: idx_payment_status
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: payment
+            indexName: idx_payment_created_at
+            columns:
+              - column:
+                  name: created_at

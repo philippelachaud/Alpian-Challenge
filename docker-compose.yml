@@ -1,0 +1,153 @@
+services:
+  # PostgreSQL with persistent storage
+  postgres:
+    image: postgres:16-alpine
+    container_name: payment-postgres
+    environment:
+      POSTGRES_DB: payment
+      POSTGRES_USER: payment
+      POSTGRES_PASSWORD: payment
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - payment-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment -d payment"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Zookeeper (required for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: payment-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - payment-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: payment-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "29092:29092"
+    networks:
+      - payment-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Traefik reverse proxy and load balancer
+  traefik:
+    image: traefik:latest
+    container_name: payment-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=DEBUG"
+      - "--accesslog=true"
+    environment:
+      DOCKER_API_VERSION: "1.45"
+    ports:
+      - "8000:80"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /run/user/1000/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - payment-network
+    depends_on:
+      - postgres
+      - kafka
+
+  # Payment service (scalable with --scale payment=N)
+  payment:
+    build: payment
+    # Uncomment the following line if you have a pre-built image
+    # image: payment-service:latest
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SERVER_PORT: 8080
+    # ports:
+    #   - "8082:8080"  # Comment out for scaling - use Traefik (port 8000) instead
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      traefik:
+        condition: service_started
+    networks:
+      - payment-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.payment.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.payment.entrypoints=web"
+      - "traefik.http.routers.payment.middlewares=payment-stripprefix"
+      - "traefik.http.middlewares.payment-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.services.payment.loadbalancer.server.port=8080"
+      - "traefik.http.services.payment.loadbalancer.sticky.cookie=true"
+      - "traefik.http.services.payment.loadbalancer.sticky.cookie.name=payment_server"
+
+  # Processor service (handles payment processing via Kafka)
+  processor:
+    build: processor
+    # Uncomment the following line if you have a pre-built image
+    # image: payment-service:latest
+    environment:
+      # JDBC Configuration (for Liquibase migrations)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payment
+      SPRING_DATASOURCE_USERNAME: payment
+      SPRING_DATASOURCE_PASSWORD: payment
+      # R2DBC Configuration (for reactive database access)
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/payment
+      SPRING_R2DBC_USERNAME: payment
+      SPRING_R2DBC_PASSWORD: payment
+      # Liquibase Configuration
+      SPRING_LIQUIBASE_ENABLED: "true"
+      # Kafka Configuration
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP-SERVERS: kafka:9092
+      # Server Configuration
+      SERVER_PORT: 8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      traefik:
+        condition: service_started
+    networks:
+      - payment-network
+
+networks:
+  payment-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local

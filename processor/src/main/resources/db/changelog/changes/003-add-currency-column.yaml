@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-add-currency-column
+      author: system
+      changes:
+        - addColumn:
+            tableName: account
+            columns:
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: true

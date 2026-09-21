@@ -1,0 +1,58 @@
+### Create Payment - Success (with sufficient balance)
+### Should return 201 CREATED
+PUT http://localhost:8000/api/payment/create
+Content-Type: application/json
+
+{
+  "fromAccount": "CH9300762011623852957",
+  "toAccount": "CH1234567890123456789",
+  "amount": 100.00,
+  "currency": "CHF",
+  "reference": "Test payment - successful",
+  "status": "PENDING"
+}
+
+###
+
+### Create Payment - Success (with sufficient balance - EUR account)
+### Should return 201 CREATED
+PUT http://localhost:8000/api/payment/create
+Content-Type: application/json
+
+{
+  "fromAccount": "FR1420041010050500013",
+  "toAccount": "FR7630006000011234567890189",
+  "amount": 500.50,
+  "currency": "EUR",
+  "reference": "Test payment EUR - successful",
+  "status": "PENDING"
+}
+
+###
+
+### Create Payment - Failure (insufficient balance)
+### Should return 201 initially, but payment will fail in processor
+PUT http://localhost:8000/api/payment/create
+Content-Type: application/json
+
+{
+  "id": "payment-003",
+  "fromAccount": "CH9300762011623852957",
+  "toAccount": "CH1234567890123456789",
+  "amount": 5000.00,
+  "currency": "CHF",
+  "reference": "Test payment - insufficient balance",
+  "status": "PENDING"
+}
+
+###
+
+### Cancel Payment - Success (cancel payment-006)
+### Should return 200 OK
+DELETE http://localhost:8000/api/payment/cancel?id=b195c3b1-136c-408a-a1c4-51d157a090c3
+
+###
+
+### Cancel Payment - Failure (payment not found)
+### Should return 200 initially, but will fail in processor
+DELETE http://localhost:8000/api/payment/cancel?id=b195c3b1-136c-408a-a1c4-51d157a090c3

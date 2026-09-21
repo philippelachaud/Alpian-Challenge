@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Status Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-connect {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-connect:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-disconnect {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-disconnect:hover:not(:disabled) {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-bar {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-bar.disconnected {
+            background: #fee;
+            color: #c0392b;
+        }
+
+        .status-bar.connected {
+            background: #e8f5e9;
+            color: #27ae60;
+        }
+
+        .status-bar.connecting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-bar.disconnected .status-dot {
+            background: #c0392b;
+        }
+
+        .status-bar.connected .status-dot {
+            background: #27ae60;
+        }
+
+        .status-bar.connecting .status-dot {
+            background: #856404;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .messages-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .messages-header {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-btn {
+            background: transparent;
+            color: #667eea;
+            padding: 6px 12px;
+            font-size: 14px;
+            border: 1px solid #667eea;
+        }
+
+        .clear-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .message {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .message-content {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+
+        .message-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .status-PENDING { background: #fff3cd; color: #856404; }
+        .status-CREATED { background: #d1ecf1; color: #0c5460; }
+        .status-EXECUTED { background: #d4edda; color: #155724; }
+        .status-FAILED { background: #f8d7da; color: #721c24; }
+        .status-CANCELLED { background: #e2e3e5; color: #383d41; }
+
+        .no-messages {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+
+        .config-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #0d47a1;
+        }
+
+        .config-info code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Payment Status Monitor</h1>
+        <p class="subtitle">Real-time payment status updates via WebSocket</p>
+
+        <div class="config-info">
+            <strong>Configuration:</strong> Connecting through Traefik at <code>ws://localhost:8000/api/payment/status</code>
+            <br>Monitoring all payment status updates in real-time
+        </div>
+
+        <div class="input-section">
+            <button class="btn-connect" id="connectBtn" onclick="connect()">Connect</button>
+            <button class="btn-disconnect" id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+        </div>
+
+        <div class="status-bar disconnected" id="statusBar">
+            <span class="status-dot"></span>
+            <span id="statusText">Disconnected - Click Connect to start monitoring</span>
+        </div>
+
+        <div class="messages-container">
+            <div class="messages-header">
+                <span>Messages</span>
+                <button class="clear-btn" onclick="clearMessages()">Clear</button>
+            </div>
+            <div id="messages">
+                <div class="no-messages">No messages yet. Connect to start receiving updates.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let messageCount = 0;
+
+        function updateStatus(status, text) {
+            const statusBar = document.getElementById('statusBar');
+            const statusText = document.getElementById('statusText');
+            
+            statusBar.className = 'status-bar ' + status;
+            statusText.textContent = text;
+        }
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                alert('Already connected');
+                return;
+            }
+
+            // Connect through Traefik (port 8000) with /api prefix
+            // No payment ID needed - we receive all payment status updates
+            const wsUrl = `ws://localhost:8000/api/payment/status`;
+            
+            updateStatus('connecting', 'Connecting...');
+            addSystemMessage(`Connecting to ${wsUrl}`);
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function(event) {
+                updateStatus('connected', 'Connected - Monitoring all payment status updates');
+                addSystemMessage('WebSocket connection established - now receiving all payment updates');
+                
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+            };
+
+            ws.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    addPaymentMessage(message);
+                } catch (e) {
+                    addSystemMessage('Received invalid JSON: ' + event.data);
+                }
+            };
+
+            ws.onerror = function(error) {
+                addSystemMessage('WebSocket error occurred', true);
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = function(event) {
+                updateStatus('disconnected', 'Disconnected - Click Connect to start monitoring');
+                addSystemMessage(`Connection closed (code: ${event.code}, reason: ${event.reason || 'None'})`);
+                
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+                
+                ws = null;
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function addPaymentMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            
+            // Remove "no messages" placeholder
+            const noMessages = messagesDiv.querySelector('.no-messages');
+            if (noMessages) {
+                noMessages.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            const time = new Date(message.updatedAt).toLocaleString();
+            
+            messageDiv.innerHTML = `
+                <div class="message-time">${time}</div>
+                <div class="message-content">${JSON.stringify(message, null, 2)}</div>
+                <div>
+                    <span class="message-status status-${message.status}">
+                        ${message.status}
+                    </span>
+                </div>
+            `;
+            
+            messagesDiv.insertBefore(messageDiv, messagesDiv.firstChild);
+            messageCount++;
+        }
+
+        function addSystemMessage(text, isError = false) {
+            const messagesDiv = document.getElementById('messages');
+            
+            // Remove "no messages" placeholder
+            const noMessages = messagesDiv.querySelector('.no-messages');
+            if (noMessages) {
+                noMessages.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.style.borderLeftColor = isError ? '#e74c3c' : '#95a5a6';
+            
+            const time = new Date().toLocaleTimeString();
+            
+            messageDiv.innerHTML = `
+                <div class="message-time">${time}</div>
+                <div class="message-content" style="background: ${isError ? '#fee' : '#f0f0f0'}; color: ${isError ? '#c0392b' : '#666'};">
+                    [SYSTEM] ${text}
+                </div>
+            `;
+            
+            messagesDiv.insertBefore(messageDiv, messagesDiv.firstChild);
+        }
+
+        function clearMessages() {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = '<div class="no-messages">No messages yet. Connect to start receiving updates.</div>';
+            messageCount = 0;
+        }
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', function() {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+</body>
+</html>

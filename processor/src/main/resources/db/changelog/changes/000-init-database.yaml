@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 000-init-database
+      author: system
+      preConditions:
+        - onFail: MARK_RAN
+      comment: Initialize database schema and extensions
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: |
+              -- Create schema if it doesn't exist (optional, public is default)
+              CREATE SCHEMA IF NOT EXISTS public;
+              
+              -- Grant permissions on schema
+              GRANT ALL ON SCHEMA public TO payment;
+              GRANT ALL ON SCHEMA public TO public;
+        - sql:
+            dbms: postgresql
+            sql: |
+              -- Enable commonly used PostgreSQL extensions
+              CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+      rollback:
+        - sql: DROP EXTENSION IF EXISTS "uuid-ossp";

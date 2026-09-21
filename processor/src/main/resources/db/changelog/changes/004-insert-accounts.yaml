@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-insert-accounts
+      author: system
+      changes:
+        - insert:
+            tableName: account
+            columns:
+              - column:
+                  name: iban
+                  value: FR1420041010050500013
+              - column:
+                  name: amount
+                  valueNumeric: 12435.30
+              - column:
+                  name: currency
+                  value: EUR
+        - insert:
+            tableName: account
+            columns:
+              - column:
+                  name: iban
+                  value: CH9300762011623852957
+              - column:
+                  name: amount
+                  valueNumeric: 2549
+              - column:
+                  name: currency
+                  value: CHF
